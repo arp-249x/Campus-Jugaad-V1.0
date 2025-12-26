@@ -9,6 +9,7 @@ interface NavigationProps {
   onMenuClick?: () => void;
   onWalletClick?: () => void;
   onNotificationClick?: () => void;
+  balance: number;
 }
 
 export function Navigation({ 
@@ -16,7 +17,8 @@ export function Navigation({
   onTabChange, 
   onMenuClick,
   onWalletClick,
-  onNotificationClick 
+  onNotificationClick,
+  balance
 }: NavigationProps) {
   const { theme, toggleTheme } = useTheme();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -84,7 +86,7 @@ export function Navigation({
             className="hidden sm:flex items-center gap-2 bg-[var(--campus-border)] backdrop-blur-md rounded-full px-4 py-2 border border-[var(--campus-border)] hover:border-[#00F5D4]/30 transition-all cursor-pointer"
           >
             <Wallet className="w-4 h-4 text-[#00F5D4]" />
-            <span className="text-[#00F5D4]">₹450</span>
+            <span className="text-[#00F5D4]">₹{balance}</span>
           </button>
 
           {/* Notification Bell */}

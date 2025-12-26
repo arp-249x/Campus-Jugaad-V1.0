@@ -13,11 +13,10 @@ interface Transaction {
 interface WalletOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+  balance: number;
 }
 
-export function WalletOverlay({ isOpen, onClose }: WalletOverlayProps) {
-  const balance = 450;
-
+export function WalletOverlay({ isOpen, onClose, balance }: WalletOverlayProps) {
   const transactions: Transaction[] = [
     {
       id: "TXN-1023",

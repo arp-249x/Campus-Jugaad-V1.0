@@ -2,6 +2,7 @@ import { Calendar, Shield } from "lucide-react";
 import { useState } from "react";
 import { UrgencySelector } from "./UrgencySelector";
 import { SuccessModal } from "./SuccessModal";
+import { useToast } from "./ToastContext";
 
 interface FormErrors {
   taskName?: string;
@@ -10,16 +11,34 @@ interface FormErrors {
   incentive?: string;
 }
 
-export function TaskMasterView() {
-  const [urgency, setUrgency] = useState<"low" | "medium" | "high">("medium");
+interface Quest {
+  title: string;
+  description: string;
+  reward: number;
+  xp: number;
+  urgency: "low" | "medium" | "urgent";
+  deadline: string;
+  location?: string;
+  highlighted?: boolean;
+  isMyQuest?: boolean; // Added property
+}
+
+interface TaskMasterViewProps {
+  addQuest: (quest: Quest) => void;
+}
+
+export function TaskMasterView({ addQuest }: TaskMasterViewProps) {
+  const [urgency, setUrgency] = useState<"low" | "medium" | "urgent">("medium");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [formData, setFormData] = useState({
     taskName: "",
     taskDetails: "",
     deadline: "",
     incentive: "",
+    location: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const { showToast } = useToast();
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -34,6 +53,16 @@ export function TaskMasterView() {
     
     if (!formData.deadline) {
       newErrors.deadline = "Deadline is required";
+    } else {
+      // Enhanced Time-Based Validation: Check if deadline is in the past
+      const selectedDate = new Date(formData.deadline);
+      const now = new Date();
+      
+      if (selectedDate <= now) {
+        newErrors.deadline = "Deadline must be in the future";
+        showToast("error", "Invalid Deadline", "Please select a future date and time for the deadline.");
+        return false;
+      }
     }
     
     if (!formData.incentive || parseFloat(formData.incentive) <= 0) {
@@ -41,12 +70,39 @@ export function TaskMasterView() {
     }
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    // If there are any errors, show a toast notification
+    if (Object.keys(newErrors).length > 0) {
+      showToast("error", "Validation Error", "Please fill in all required fields correctly.");
+      return false;
+    }
+    
+    return true;
   };
 
   const handleSubmit = () => {
     if (validateForm()) {
+      // Create new quest object
+      const newQuest: Quest = {
+        title: formData.taskName,
+        description: formData.taskDetails,
+        reward: parseFloat(formData.incentive),
+        xp: Math.floor(parseFloat(formData.incentive) / 3), // Calculate XP based on reward
+        urgency: urgency,
+        deadline: formatDeadline(formData.deadline),
+        location: formData.location || undefined,
+        isMyQuest: true, // Mark this quest as created by the current user
+      };
+      
+      // Add quest to global state
+      addQuest(newQuest);
+      
+      // Show success modal
       setShowSuccessModal(true);
+      
+      // Show success toast
+      showToast("success", "Quest Posted!", "Your quest has been posted successfully.");
+      
       // Reset form after successful submission
       setTimeout(() => {
         setFormData({
@@ -54,9 +110,45 @@ export function TaskMasterView() {
           taskDetails: "",
           deadline: "",
           incentive: "",
+          location: "",
         });
+        setUrgency("medium");
         setErrors({});
+        setShowSuccessModal(false);
       }, 2000);
+    }
+  };
+
+  // Helper function to format deadline for display
+  const formatDeadline = (datetimeLocal: string): string => {
+    const date = new Date(datetimeLocal);
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const timeString = date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    
+    // Check if it's today
+    if (date.toDateString() === now.toDateString()) {
+      return `Today, ${timeString}`;
+    }
+    // Check if it's tomorrow
+    else if (date.toDateString() === tomorrow.toDateString()) {
+      return `Tomorrow, ${timeString}`;
+    }
+    // Otherwise return full date
+    else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
     }
   };
 
@@ -105,33 +197,31 @@ export function TaskMasterView() {
                 )}
               </div>
 
-              {/* Two Column Layout - Stack on mobile */}
+              {/* Row 1: Task Details vs Deadline & Urgency */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Task Details */}
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[var(--campus-text-primary)] mb-2">Task Details</label>
-                    <textarea
-                      placeholder="Brief details about the task..."
-                      rows={6}
-                      value={formData.taskDetails}
-                      onChange={(e) => {
-                        setFormData({ ...formData, taskDetails: e.target.value });
-                        if (errors.taskDetails) setErrors({ ...errors, taskDetails: undefined });
-                      }}
-                      className={`w-full px-4 py-3 bg-[var(--campus-border)] rounded-xl text-[var(--campus-text-primary)] placeholder-[var(--campus-text-secondary)] focus:outline-none focus:ring-2 transition-all resize-none ${
-                        errors.taskDetails
-                          ? "border-2 border-red-500 focus:ring-red-500/50"
-                          : "border border-[var(--campus-border)] focus:ring-[#2D7FF9]/50"
-                      }`}
-                    />
-                    {errors.taskDetails && (
-                      <p className="text-red-500 text-sm mt-1">{errors.taskDetails}</p>
-                    )}
-                  </div>
+                {/* Left: Task Details */}
+                <div>
+                  <label className="block text-[var(--campus-text-primary)] mb-2">Task Details</label>
+                  <textarea
+                    placeholder="Brief details about the task..."
+                    rows={6}
+                    value={formData.taskDetails}
+                    onChange={(e) => {
+                      setFormData({ ...formData, taskDetails: e.target.value });
+                      if (errors.taskDetails) setErrors({ ...errors, taskDetails: undefined });
+                    }}
+                    className={`w-full px-4 py-3 bg-[var(--campus-border)] rounded-xl text-[var(--campus-text-primary)] placeholder-[var(--campus-text-secondary)] focus:outline-none focus:ring-2 transition-all resize-none ${
+                      errors.taskDetails
+                        ? "border-2 border-red-500 focus:ring-red-500/50"
+                        : "border border-[var(--campus-border)] focus:ring-[#2D7FF9]/50"
+                    }`}
+                  />
+                  {errors.taskDetails && (
+                    <p className="text-red-500 text-sm mt-1">{errors.taskDetails}</p>
+                  )}
                 </div>
 
-                {/* Right Column - Deadline, Urgency, Incentive */}
+                {/* Right: Deadline & Urgency */}
                 <div className="space-y-6">
                   {/* Deadline */}
                   <div>
@@ -162,31 +252,48 @@ export function TaskMasterView() {
                     <label className="block text-[var(--campus-text-primary)] mb-4">Urgency</label>
                     <UrgencySelector value={urgency} onChange={setUrgency} />
                   </div>
+                </div>
+              </div>
 
-                  {/* Incentive Amount */}
-                  <div>
-                    <label className="block text-[var(--campus-text-primary)] mb-2">Incentive Amount</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--campus-text-secondary)]">₹</span>
-                      <input
-                        type="number"
-                        placeholder="Enter amount"
-                        value={formData.incentive}
-                        onChange={(e) => {
-                          setFormData({ ...formData, incentive: e.target.value });
-                          if (errors.incentive) setErrors({ ...errors, incentive: undefined });
-                        }}
-                        className={`w-full pl-8 pr-4 py-3 bg-[var(--campus-border)] rounded-xl text-[var(--campus-text-primary)] placeholder-[var(--campus-text-secondary)] focus:outline-none focus:ring-2 transition-all ${
-                          errors.incentive
-                            ? "border-2 border-red-500 focus:ring-red-500/50"
-                            : "border border-[var(--campus-border)] focus:ring-[#2D7FF9]/50"
-                        }`}
-                      />
-                    </div>
-                    {errors.incentive && (
-                      <p className="text-red-500 text-sm mt-1">{errors.incentive}</p>
-                    )}
+              {/* Row 2: Incentive vs Location (Aligned parallel) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Incentive Amount */}
+                <div>
+                  <label className="block text-[var(--campus-text-primary)] mb-2">Incentive Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--campus-text-secondary)]">₹</span>
+                    <input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={formData.incentive}
+                      onChange={(e) => {
+                        setFormData({ ...formData, incentive: e.target.value });
+                        if (errors.incentive) setErrors({ ...errors, incentive: undefined });
+                      }}
+                      className={`w-full pl-8 pr-4 py-3 bg-[var(--campus-border)] rounded-xl text-[var(--campus-text-primary)] placeholder-[var(--campus-text-secondary)] focus:outline-none focus:ring-2 transition-all ${
+                        errors.incentive
+                          ? "border-2 border-red-500 focus:ring-red-500/50"
+                          : "border border-[var(--campus-border)] focus:ring-[#2D7FF9]/50"
+                      }`}
+                    />
                   </div>
+                  {errors.incentive && (
+                    <p className="text-red-500 text-sm mt-1">{errors.incentive}</p>
+                  )}
+                </div>
+
+                {/* Location (Optional) */}
+                <div>
+                  <label className="block text-[var(--campus-text-primary)] mb-2">Location (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Library, Hostel 4"
+                    value={formData.location}
+                    onChange={(e) => {
+                      setFormData({ ...formData, location: e.target.value });
+                    }}
+                    className="w-full px-4 py-3 bg-[var(--campus-border)] rounded-xl text-[var(--campus-text-primary)] placeholder-[var(--campus-text-secondary)] focus:outline-none focus:ring-2 border border-[var(--campus-border)] focus:ring-[#2D7FF9]/50 transition-all"
+                  />
                 </div>
               </div>
 

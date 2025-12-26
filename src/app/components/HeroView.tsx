@@ -14,102 +14,20 @@ interface Quest {
   deadline: string;
   location?: string;
   highlighted?: boolean;
+  isMyQuest?: boolean; // Added property
 }
 
 interface HeroViewProps {
+  quests: Quest[];
   onAcceptQuest?: (quest: Quest) => void;
 }
 
-export function HeroView({ onAcceptQuest }: HeroViewProps) {
+export function HeroView({ quests, onAcceptQuest }: HeroViewProps) {
   const [showToast, setShowToast] = useState(false);
   const [acceptedQuest, setAcceptedQuest] = useState<Quest | null>(null);
   const [acceptedQuestIds, setAcceptedQuestIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [showEmpty, setShowEmpty] = useState(false);
-
-  const quests: Quest[] = [
-    {
-      title: "Hold Canteen Line Spot",
-      description: "Stand in the lunch queue for me for 20 mins.",
-      reward: 150,
-      xp: 50,
-      urgency: "medium" as const,
-      deadline: "Today, 2 PM",
-      location: "Main Canteen",
-    },
-    {
-      title: "Deliver Lab Coat ASAP",
-      description: "Forgot my coat at Hostel 4. Need it at Chem Lab now!",
-      reward: 250,
-      xp: 75,
-      urgency: "urgent" as const,
-      deadline: "In 30 Mins",
-      location: "Hostel 4 → Chem Lab",
-    },
-    {
-      title: "Tutoring Session: Calculus II",
-      description: "2-hour session to prep for midterm exam.",
-      reward: 600,
-      xp: 200,
-      urgency: "low" as const,
-      deadline: "Tomorrow, 5 PM",
-      location: "Library",
-      highlighted: true,
-    },
-    {
-      title: "Print Assignment",
-      description: "Print 10 pages and deliver to Block A, Room 204.",
-      reward: 100,
-      xp: 30,
-      urgency: "medium" as const,
-      deadline: "Today, 4 PM",
-      location: "Block A",
-    },
-    {
-      title: "Wake Me Up Call",
-      description: "Call me at 6 AM for morning class. I'm a heavy sleeper!",
-      reward: 80,
-      xp: 25,
-      urgency: "low" as const,
-      deadline: "Tomorrow, 6 AM",
-    },
-    {
-      title: "Submit Assignment",
-      description: "Submit my assignment to the faculty office before 12 PM.",
-      reward: 200,
-      xp: 60,
-      urgency: "urgent" as const,
-      deadline: "Today, 11:30 AM",
-      location: "Faculty Office",
-    },
-    {
-      title: "Buy Snacks from Canteen",
-      description: "Get me 2 samosas and a cold coffee during break.",
-      reward: 120,
-      xp: 40,
-      urgency: "low" as const,
-      deadline: "Today, 3 PM",
-      location: "Canteen",
-    },
-    {
-      title: "Take Notes in Class",
-      description: "Attend CS101 lecture and share detailed notes.",
-      reward: 300,
-      xp: 100,
-      urgency: "medium" as const,
-      deadline: "Today, 10 AM",
-      location: "Room 301",
-    },
-    {
-      title: "Return Library Book",
-      description: "Return 'Data Structures' book to library before due date.",
-      reward: 90,
-      xp: 35,
-      urgency: "medium" as const,
-      deadline: "Tomorrow, 6 PM",
-      location: "Library",
-    },
-  ];
 
   const handleAcceptQuest = (quest: Quest, index: number) => {
     setAcceptedQuest(quest);
