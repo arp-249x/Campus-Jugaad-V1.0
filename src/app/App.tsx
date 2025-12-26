@@ -12,6 +12,7 @@ import { ActiveQuestBar } from "./components/ActiveQuestBar";
 import { MobileMenu } from "./components/MobileMenu";
 import { WalletOverlay } from "./components/WalletOverlay";
 import { NotificationPanel } from "./components/NotificationPanel";
+import { Footer } from "./components/Footer";
 
 // Define Quest interface
 interface Quest {
@@ -206,7 +207,7 @@ function AppContent() {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#9D4EDD]/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col min-h-screen">
         <Navigation 
           activeTab={activeTab} 
           onTabChange={setActiveTab}
@@ -227,6 +228,8 @@ function AppContent() {
         {activeTab === "find" && <HeroView quests={quests} onAcceptQuest={handleAcceptQuest} />}
         {activeTab === "dashboard" && <DashboardView />}
         {activeTab === "leaderboard" && <LeaderboardView />}
+
+        <Footer />
 
         <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
