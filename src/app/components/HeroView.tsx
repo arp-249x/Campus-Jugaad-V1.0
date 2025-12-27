@@ -1,4 +1,4 @@
-import { ArrowUpDown, ListFilter, MapPin, Key } from "lucide-react";
+import { ArrowUpDown, ListFilter, MapPin } from "lucide-react";
 import { QuestCard } from "./QuestCard";
 import { useState } from "react";
 import { ToastNotification } from "./ToastNotification";
@@ -12,28 +12,36 @@ interface Quest {
   xp: number;
   urgency: "low" | "medium" | "urgent";
   deadline: string;
+  deadlineIso?: string;
   location?: string;
   highlighted?: boolean;
   isMyQuest?: boolean;
-  otp: string; // Added OTP
+  otp: string;
 }
 
 interface HeroViewProps {
   quests: Quest[];
   onAcceptQuest?: (quest: Quest) => void;
+  activeQuest: any | null; // Receive the active quest from App
 }
 
-export function HeroView({ quests, onAcceptQuest }: HeroViewProps) {
+export function HeroView({ quests, onAcceptQuest, activeQuest }: HeroViewProps) {
   const [showToast, setShowToast] = useState(false);
   const [acceptedQuest, setAcceptedQuest] = useState<Quest | null>(null);
-  const [acceptedQuestIds, setAcceptedQuestIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [showEmpty, setShowEmpty] = useState(false);
 
-  const handleAcceptQuest = (quest: Quest, index: number) => {
+  const handleAcceptQuest = (quest: Quest) => {
+    // If there is already an active quest, don't update local state.
+    // Just pass the event up so App.tsx can show the error toast.
+    if (activeQuest) {
+        onAcceptQuest?.(quest);
+        return;
+    }
+
+    // Normal acceptance flow
     setAcceptedQuest(quest);
     setShowToast(true);
-    setAcceptedQuestIds(prev => new Set(prev).add(quest.title));
     onAcceptQuest?.(quest);
   };
 
@@ -106,17 +114,10 @@ export function HeroView({ quests, onAcceptQuest }: HeroViewProps) {
               <div key={index} className="relative group">
                 <QuestCard 
                   {...quest} 
-                  onAccept={() => handleAcceptQuest(quest, index)}
-                  isAccepted={acceptedQuestIds.has(quest.title)}
+                  onAccept={() => handleAcceptQuest(quest)}
+                  // Only show "Accepted" if this specific quest is the active one
+                  isAccepted={activeQuest?.title === quest.title}
                 />
-                
-                {/* PROTOTYPE: OTP Badge */}
-                <div className="absolute top-4 left-4 z-10">
-                   <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-xs font-mono text-[#00F5D4] border border-[#00F5D4]/30">
-                     <Key className="w-3 h-3" />
-                     <span>{quest.otp}</span>
-                   </div>
-                </div>
               </div>
             ))}
           </div>
